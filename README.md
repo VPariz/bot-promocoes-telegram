@@ -1,113 +1,118 @@
-# Bot de Promoções para o Telegram com IA
+# Telegram Deal Scraper & LLM Classifier
 
-Monitor assíncrono de canais do Telegram desenvolvido em Python via protocolo MTProto, classificação inteligente de ofertas usando modelos de linguagem (Groq / Llama 3, DeepSeek e Google Gemini) e sincronização automática com planilhas do Google Sheets.
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![Telegram](https://img.shields.io/badge/Telegram-MTProto%20%2F%20Telethon-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://core.telegram.org/mtproto)
+[![LLM](https://img.shields.io/badge/LLM-Groq%20%7C%20DeepSeek%20%7C%20Gemini-FF6F00?style=flat-square)](https://groq.com)
+[![Google Sheets](https://img.shields.io/badge/Google_Sheets-gspread-34A853?style=flat-square&logo=googlesheets&logoColor=white)](https://developers.google.com/sheets/api)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
+
+Asynchronous real-time Telegram channel scraper built with Python (`asyncio` and MTProto), intelligent e-commerce deal classification and extraction using large language models (Groq / Llama 3.1, DeepSeek, and Google Gemini), and automated live sync with Google Sheets.
 
 ---
 
-## Arquitetura do Sistema
+## 🏗️ System Architecture
 
 ```mermaid
 flowchart TD
-    subgraph INGESTAO["1. Ingestão de Mensagens"]
-        TG["Canais Monitorados no Telegram"] -->|MTProto / asyncio| UB["userbot.py"]
+    subgraph INGESTION["1. Real-Time Message Ingestion"]
+        TG["Monitored Telegram Channels"] -->|MTProto / asyncio| UB["userbot.py"]
     end
 
-    subgraph PROCESSAMENTO["2. Classificação & Extração"]
-        UB -->|Hash MD5 da URL| DEDUP{"Oferta já processada?"}
-        DEDUP -->|Sim| DROP["Descartar"]
-        DEDUP -->|Não| L1["1º Nível: Groq API (Llama 3.1)<br/>Resposta rápida e extração de campos"]
-        L1 -->|Fallback se der erro| L2["2º Nível: DeepSeek API<br/>Reserva"]
-        L1 -->|Auditoria pontual| L3["3º Nível: Google Gemini API<br/>Controle de cota"]
+    subgraph PROCESSING["2. Classification & Parsing"]
+        UB -->|URL MD5 Hash| DEDUP{"Offer already seen?"}
+        DEDUP -->|Yes| DROP["Discard / Deduplicate"]
+        DEDUP -->|No| L1["Tier 1: Groq API (Llama 3.1)<br/>Ultra-low latency schema parsing"]
+        L1 -->|Failover / Fallback| L2["Tier 2: DeepSeek API<br/>Secondary fallback"]
+        L1 -->|Spot Auditing| L3["Tier 3: Google Gemini API<br/>Quota management"]
     end
 
-    subgraph DESTINO["3. Armazenamento & Alertas"]
-        L1 --> SHEETS["Google Sheets API<br/>Planilha de histórico"]
+    subgraph DESTINATION["3. Storage & Alerts"]
+        L1 --> SHEETS["Google Sheets API<br/>Historical tracking table"]
         L2 --> SHEETS
-        L1 --> ALERT["Canal de Alertas<br/>Mensagem formatada"]
+        L1 --> ALERT["Alert Channel<br/>Structured deal broadcast"]
         L2 --> ALERT
     end
 ```
 
 ---
 
-## Funcionalidades
+## ⚡ Features
 
-- **Monitoramento em Tempo Real com `asyncio` e MTProto:** Conecta-se diretamente aos servidores do Telegram via protocolo oficial MTProto, permitindo monitorar dezenas de canais simultaneamente com consumo mínimo de memória.
-- **Hierarquia de Modelos com Fallback:** Utiliza prioritariamente o endpoint de alta velocidade da Groq (Llama 3.1 8B) para extrair nome do produto, preço à vista, parcelamento e cupom, alternando para a API do DeepSeek caso haja oscilação na conexão.
-- **Filtro de Duplicatas:** Cria um hash único da URL de cada produto para não postar a mesma promoção repetidas vezes.
-- **Envio para Google Sheets:** Salva cada promoção classificada diretamente em uma planilha online através da API `gspread`.
-- **Fácil Execução em Nuvem ou Local:** Pode rodar no computador ou em servidores (VPS / Railway) através de variáveis de ambiente (`.env`) e sessão em texto (`StringSession`).
+- **Asynchronous MTProto Client:** Interfaces natively with Telegram's MTProto protocol using `telethon` and Python's `asyncio`, monitoring multiple high-volume broadcast channels concurrently with minimal RAM overhead.
+- **Hierarchical Multi-LLM Parsing:** Queries Groq's high-throughput Llama 3.1 endpoint to parse product titles, spot cash prices, installment plans, and coupon codes, automatically falling back to DeepSeek if rate limits or network issues arise.
+- **Cryptographic Deduplication:** Hashes target checkout URLs (MD5) to prevent redundant database entries and notification spam.
+- **Cloud & Headless Execution:** Designed for headless 24/7 cloud deployment (VPS, Railway, Docker) using environment variables (`.env`) and string-serialized Telegram sessions (`StringSession`).
 
 ---
 
-## Estrutura de Arquivos
+## 📂 Repository Structure
 
 ```
 bot-promocoes-telegram/
-├── userbot.py           # Script principal com a lógica assíncrona e envio para planilha
-├── userbot_local.py     # Versão simplificada para testes rápidos no terminal
-├── logar.py             # Script interativo para autenticar e gerar a StringSession
-├── requirements.txt     # Dependências do projeto (cliente MTProto, gspread, aiohttp)
-├── .env.example         # Exemplo de configuração de chaves e variáveis
-├── .gitignore           # Evita subir sessões e credenciais locais para o GitHub
+├── userbot.py           # Core asynchronous scraper, LLM dispatcher & Google Sheets exporter
+├── userbot_local.py     # Lightweight local testing script for quick terminal verification
+├── logar.py             # Interactive auth script to generate a headless StringSession
+├── requirements.txt     # Python dependencies (Telethon, gspread, aiohttp)
+├── .env.example         # Template for API credentials and secrets
+├── .gitignore           # Ignores local session tokens and environment files
 └── README.md
 ```
 
 ---
 
-## Como Configurar e Rodar
+## 🚀 Setup & Execution
 
-### 1. Pré-requisitos
-* Python 3.10 ou superior instalado
-* Chaves da API do Telegram (`api_id` e `api_hash`), que você obtém gratuitamente em [my.telegram.org](https://my.telegram.org)
+### 1. Prerequisites
+* Python 3.10+
+* Telegram API credentials (`api_id` and `api_hash`), obtainable via [my.telegram.org](https://my.telegram.org)
 
-### 2. Instalação
+### 2. Installation
 
 ```bash
 git clone https://github.com/VPariz/bot-promocoes-telegram.git
 cd bot-promocoes-telegram
 python -m venv venv
 
-# Ative o ambiente virtual:
-# No Windows:
+# Activate virtual environment:
+# On Windows:
 .\venv\Scripts\activate
-# No Linux/Mac:
+# On Linux/macOS:
 source venv/bin/activate
 
 pip install -r requirements.txt
 ```
 
-### 3. Configurar as Chaves de Acesso
+### 3. Environment Configuration
 
-Copie o arquivo de exemplo para criar o seu `.env`:
+Copy the template configuration file:
 ```bash
 cp .env.example .env
 ```
 
-Abra o arquivo `.env` e preencha suas informações:
+Edit `.env` with your API credentials:
 ```ini
-TELEGRAM_API_ID=seu_api_id_aqui
-TELEGRAM_API_HASH=seu_api_hash_aqui
-TELEGRAM_SESSION_STRING=sua_string_session
+TELEGRAM_API_ID=your_api_id_here
+TELEGRAM_API_HASH=your_api_hash_here
+TELEGRAM_SESSION_STRING=your_string_session
 
-# Chaves das APIs de IA
-GROQ_API_KEY=sua_chave_groq
-DEEPSEEK_API_KEY=sua_chave_deepseek
-GEMINI_API_KEY=sua_chave_gemini
+# LLM API Keys
+GROQ_API_KEY=your_groq_key
+DEEPSEEK_API_KEY=your_deepseek_key
+GEMINI_API_KEY=your_gemini_key
 
-# Nome da sua planilha no Google Drive
-GOOGLE_SHEET_NAME=nome_da_sua_planilha
+# Destination Google Sheet name
+GOOGLE_SHEET_NAME=your_sheet_name
 ```
 
-### 4. Gerar a Sessão de Acesso do Telegram
+### 4. Authenticate Telegram Client
 
-Para o bot conseguir se conectar sem pedir código por SMS toda vez:
+Generate an authorization `StringSession`:
 ```bash
 python logar.py
 ```
-O script exibirá uma linha longa de texto (`StringSession`). Copie e cole esse texto na variável `TELEGRAM_SESSION_STRING` dentro do seu `.env`.
+Copy the printed session string into the `TELEGRAM_SESSION_STRING` field in `.env`.
 
-### 5. Iniciar o Bot
+### 5. Launch Scraper Daemon
 
 ```bash
 python userbot.py
@@ -115,5 +120,5 @@ python userbot.py
 
 ---
 
-## Licença
-Distribuído sob licença MIT. Consulte o arquivo `LICENSE` para mais detalhes.
+## 📜 License
+This project is licensed under the **MIT License** — see the `LICENSE` file for details.
