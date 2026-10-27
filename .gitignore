@@ -1,0 +1,29 @@
+# Sessões e chaves do Telegram
+*.session
+*.session-journal
+
+# Credenciais e Segredos
+.env
+.env.*
+chaveOpenRouter.txt
+gspread_credentials.json
+*credentials*.json
+*token*.json
+*.json.key
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+
+# Logs e diagnósticos
+*.log
+
+# IDEs e Sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
