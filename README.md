@@ -1,5 +1,6 @@
 # Telegram Deal Scraper & LLM Classifier
 
+[![Bot CI](https://github.com/VPariz/bot-promocoes-telegram/actions/workflows/ci.yml/badge.svg)](https://github.com/VPariz/bot-promocoes-telegram/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![Telegram](https://img.shields.io/badge/Telegram-MTProto%20%2F%20Telethon-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://core.telegram.org/mtproto)
 [![LLM](https://img.shields.io/badge/LLM-Groq%20%7C%20DeepSeek%20%7C%20Gemini-FF6F00?style=flat-square)](https://groq.com)
